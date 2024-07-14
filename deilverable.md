@@ -1,7 +1,6 @@
 
 
 
-
 ## A. Summarize one real-world written business report that can be created from the DVD Dataset from the “La on Demand Assessment Environment and DVD Database” attachment.
 I want to determine sales my location. THis is a relevant business report as any business should want to know which locations are providing the most revenue, and which aren't doing very well comparitively. The summary table will be an average of the past twelve months sales data, the detailed table will be each's stores monthly sales figure.
 
