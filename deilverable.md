@@ -10,7 +10,7 @@ Detailed Table:
     paymentId: Integer (likely a unique identifier)
     paymentAmount: Decimal (to represent currency accurately)
     storeId: Integer (to identify each store uniquely)
-    DATE: Date (to record the transaction date)
+    payment_date: TIMESTAMP (to record the transaction date)
 
 Summary Table :
 
@@ -49,7 +49,7 @@ CREATE TABLE detailed_sales_report (
     payment_id INTEGER NOT NULL,
     payment_amount DECIMAL(10,2) NOT NULL,
     store_id INTEGER NOT NULL,
-    payment_date DATE NOT NULL,
+    payment_date TIMESTAMP NOT NULL,
     quarter INTEGER NOT NULL
 );
 -- Create the summary table
