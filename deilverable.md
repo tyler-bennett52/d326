@@ -2,25 +2,36 @@
 
 
 ## A. Summarize one real-world written business report that can be created from the DVD Dataset from the on Demand Assessment Environment and DVD Database attachment.
-I want to determine sales by location. THis is a relevant business report as any business should want to know which locations are providing the most revenue, and which aren't doing very well comparitively. The summary table will be an average of the past twelve months sales data, the detailed table will be each's stores monthly sales figure.
+
+I want to determine sales by location. This is a relevant business report as any business should want to know which locations are providing the most revenue, and which aren't doing very well comparitively. The summary table will be an average of the past twelve months sales data, the detailed table will be each's stores monthly sales figure.
 
 ### 1. Identify the specific fields that will be included in the detailed table and the summary table of the report.
+
 Detailed Table:
 
-    payment_id: Integer (likely a unique identifier)
-    payment_amount: Decimal (to represent currency accurately)
-    store_id: Integer (to identify each store uniquely)
-    payment_date: TIMESTAMP (to record the transaction date)
+    payment_id: Integer (unique identifier)
+    payment_amount: Decimal (currency amount)
+    store_id: Integer (unique store identifier)
+    payment_date: TIMESTAMP (transaction date)
+    quarter: Integer (derived from payment_date)
+
 
 Summary Table :
 
-    average_quarterly_sales: Decimal(9,2) (as specified in your description)
-    store_id: Integer (to identify each store uniquely)
+    store_id: Integer (unique store identifier)
+    quarter: Integer (1, 2, 3, or 4)
+    year: Integer (year of the quarter)
+    total_quarterly_sales: Decimal(10,2) (total sales for the quarter)
+    average_quarterly_sales: Decimal(10,2) (average of quarterly sales across all quarters for each store)
 
 ### 2. Describe the types of data fields used for the report.
-Datatypes will be INTEGERS (mostly for IDs and Quarter), DECIMAL for currency and TIMESTAMP for individual transaction tracking.
+
+INTEGER: For IDs, quarter, and year
+DECIMAL: For currency amounts (payment_amount, total_quarterly_sales, average_quarterly_sales)
+TIMESTAMP: For transaction dates
 
 ### 3. Identify at least two specific tables from the given dataset that will provide the data necessary for the detailed table section and the summary table section of the report.
+
 The tables that have the information I need are staff, store, and payment. Stores for store_id, payments for payment_amount, and staff to to link payments with stores.
 
 ### 4. Identify at least one field in the detailed table section that will require a custom transformation with a user-defined function and explain why it should be transformed (e.g., you might translate a field with a value of N to No and Y to Yes).
@@ -155,15 +166,13 @@ BEGIN
         p.amount AS payment_amount,
         s.store_id,
         p.payment_date,
-        date_to_quarter(p.payment_date) AS quarter
+        timestamp_to_quarter(p.payment_date) AS quarter
     FROM 
         payment p
     JOIN 
         staff st ON p.staff_id = st.staff_id
     JOIN 
         store s ON st.store_id = s.store_id
-    WHERE 
-        p.payment_date >= CURRENT_DATE - INTERVAL '12 months'
     ORDER BY 
         s.store_id, p.payment_date;
 
@@ -199,9 +208,7 @@ I like pgAgent for this tool. It would only need to run at the end of a quarter,
 
 ## G. Provide a Panopto video recording that includes the presenter and a vocalized demonstration of the functionality of the code used for the analysis.
 
-Note: For instructions on how to access and use Panopto, use the "Panopto How-To Videos" web link provided below. To access Panopto's website, navigate to the web link titled "Panopto Access," and then choose to log in using the �GU” option. If prompted, log in using your WGU student portal credentials, and then it will forward you to Panopto’s website.
-
-�WTo submit your recording, upload it to the Panopto drop box titled “Advanced Data Management D191 | D326 (Student Creators) [assignments].” Once the recording has been uploaded and processed in Panopto's system, retrieve the URL of the recording from Panopto and copy and paste it into the Links option. Upload the remaining task requirements using the Attachments option.
+[Panopto Submission](https://wgu.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=6036293c-24f0-4844-9ab1-b1c30157b31d)
 
 ## H. Acknowledge all utilized sources, including any sources of third-party code, using in-text citations and references. If no sources are used, clearly declare that no sources were used to support your submission.
 
