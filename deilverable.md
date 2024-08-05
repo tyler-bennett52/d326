@@ -30,18 +30,19 @@ The Date field should be converted into a quarter (1, 2, 3, 4), to allow for agg
 Understanding revenue by store is a key metric for identifying over/under-performing stores, allowing for management to better optimize costs by investing less in under performing locations, and allows for more efficient expansion, opting to create new stores that align more closely with over-performers than under-performers. This is one of the very first metrics a Dvd rental company would be looking at if they needed to cut store locations as well (sorry blockbusters!).
 
 ### 6. Explain how frequently your report should be refreshed to remain relevant to stakeholders.
-Quarterly is best. Updating faster than that would make the most recent (in process) quarter look worse because it would have less days in it. Updating slower would result in stale data.
+Quarterly is best. Updating faster than that would make the most recent (in process) quarter look worse because it would have less days in it. Updating slower would result in stale data. Additionally, it helps that many corporate reports to shareholders are expressed in quarterly terms and matches reporting requirements of public companies.
 
 ## B. Provide original code for function(s) in text format that perform the transformation(s) you identified in part A4.
-CREATE OR REPLACE FUNCTION date_to_quarter(date_value DATE) 
+CREATE OR REPLACE FUNCTION timestamp_to_quarter(date_value TIMESTAMP) 
 RETURNS INTEGER AS $$
 BEGIN
-    RETURN EXTRACT(QUARTER FROM date_value);
+    RETURN EXTRACT(QUARTER FROM timestamp_value) ;
 END;
 $$ LANGUAGE plpgsql;
 
 ## C. Provide original SQL code in a text format that creates the detailed and summary tables to hold your report table sections.
 
+```sql
 -- Create the detailed table
 CREATE TABLE detailed_sales_report (
     id SERIAL PRIMARY KEY,
@@ -51,7 +52,6 @@ CREATE TABLE detailed_sales_report (
     payment_date DATE NOT NULL,
     quarter INTEGER NOT NULL
 );
-
 -- Create the summary table
 CREATE TABLE summary_sales_report (
     id SERIAL PRIMARY KEY,
@@ -60,13 +60,13 @@ CREATE TABLE summary_sales_report (
     year INTEGER NOT NULL,
     average_quarterly_sales DECIMAL(10,2) NOT NULL
 );
-
 -- Ensure only one of each quarter per year per store
 ALTER TABLE summary_sales_report
 ADD CONSTRAINT unique_store_quarter_year 
 UNIQUE (store_id, quarter, year);
-
+```
 ## D. Provide an original SQL query in a text format that will extract the raw data needed for the detailed section of your report from the source database.
+```sql
 INSERT INTO detailed_sales_report (payment_id, payment_amount, store_id, payment_date, quarter)
 SELECT 
     p.payment_id,
@@ -84,9 +84,10 @@ WHERE
     p.payment_date >= CURRENT_DATE - INTERVAL '12 months'
 ORDER BY 
     s.store_id, p.payment_date;
-
+```
 ## E. Provide original SQL code in a text format that creates a trigger on the detailed table of the report that will continually update the summary table as data is added to the detailed table.
 
+```sql
 -- First, let's create a function that our trigger will use
 CREATE OR REPLACE FUNCTION update_summary_table()
 RETURNS TRIGGER AS $$
@@ -122,9 +123,10 @@ CREATE TRIGGER update_summary_after_insert
 AFTER INSERT ON detailed_sales_report
 FOR EACH ROW
 EXECUTE FUNCTION update_summary_table();
-
+```
 ## F. Provide an original stored procedure in a text format that can be used to refresh the data in both the detailed table and summary table. The procedure should clear the contents of the detailed table and summary table and perform the raw data extraction from part D.
 
+```sql
 CREATE OR REPLACE PROCEDURE refresh_sales_report()
 LANGUAGE plpgsql
 AS $$
@@ -173,8 +175,7 @@ BEGIN
     COMMIT;
 END;
 $$;
-Does this code look right to you?
-
+```
 ### 1. Identify a relevant job scheduling tool that can be used to automate the stored procedure.
 I like pgAgent for this tool. It would only need to run at the end of a quarter, so I would probably run it on the 3rd day of each quarter (to allow for refunds to process). I would probably run it outside of business hours to prevent any conflicts, so 0001 on the 3rd day of each quarter is what I'm thinking. 
 
