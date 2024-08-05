@@ -1,24 +1,24 @@
 
 
 
-## A. Summarize one real-world written business report that can be created from the DVD Dataset from the “La on Demand Assessment Environment and DVD Database” attachment.
-I want to determine sales my location. THis is a relevant business report as any business should want to know which locations are providing the most revenue, and which aren't doing very well comparitively. The summary table will be an average of the past twelve months sales data, the detailed table will be each's stores monthly sales figure.
+## A. Summarize one real-world written business report that can be created from the DVD Dataset from the on Demand Assessment Environment and DVD Database attachment.
+I want to determine sales by location. THis is a relevant business report as any business should want to know which locations are providing the most revenue, and which aren't doing very well comparitively. The summary table will be an average of the past twelve months sales data, the detailed table will be each's stores monthly sales figure.
 
 ### 1. Identify the specific fields that will be included in the detailed table and the summary table of the report.
 Detailed Table:
 
-    paymentId: Integer (likely a unique identifier)
-    paymentAmount: Decimal (to represent currency accurately)
-    storeId: Integer (to identify each store uniquely)
+    payment_id: Integer (likely a unique identifier)
+    payment_amount: Decimal (to represent currency accurately)
+    store_id: Integer (to identify each store uniquely)
     payment_date: TIMESTAMP (to record the transaction date)
 
 Summary Table :
 
-    AverageQuarterlySales: Decimal(9,2) (as specified in your description)
-    storeId: Integer (to identify each store uniquely)
+    average_quarterly_sales: Decimal(9,2) (as specified in your description)
+    store_id: Integer (to identify each store uniquely)
 
 ### 2. Describe the types of data fields used for the report.
-Datatypes will be INTEGERS (mostly for IDs and Quarter), DECIMAL for currency and DATE for individual transaction tracking.
+Datatypes will be INTEGERS (mostly for IDs and Quarter), DECIMAL for currency and TIMESTAMP for individual transaction tracking.
 
 ### 3. Identify at least two specific tables from the given dataset that will provide the data necessary for the detailed table section and the summary table section of the report.
 The tables that have the information I need are staff, store, and payment. Stores for store_id, payments for payment_amount, and staff to to link payments with stores.
@@ -58,8 +58,10 @@ CREATE TABLE summary_sales_report (
     store_id INTEGER NOT NULL,
     quarter INTEGER NOT NULL,
     year INTEGER NOT NULL,
+    total_quarterly_sales DECIMAL(10,2) NOT NULL,
     average_quarterly_sales DECIMAL(10,2) NOT NULL
 );
+
 -- Ensure only one of each quarter per year per store
 ALTER TABLE summary_sales_report
 ADD CONSTRAINT unique_store_quarter_year 
@@ -73,7 +75,7 @@ SELECT
     p.amount AS payment_amount,
     s.store_id,
     p.payment_date,
-    date_to_quarter(p.payment_date) AS quarter
+    timestamp_to_quarter(p.payment_date) AS quarter
 FROM 
     payment p
 JOIN 
@@ -99,12 +101,20 @@ BEGIN
       AND year = EXTRACT(YEAR FROM NEW.payment_date);
 
     -- Insert updated summary data
-    INSERT INTO summary_sales_report (store_id, quarter, year, average_quarterly_sales)
+    INSERT INTO summary_sales_report (store_id, quarter, year, total_quarterly_sales, average_quarterly_sales)
     SELECT 
         store_id,
         quarter,
         EXTRACT(YEAR FROM payment_date) AS year,
-        AVG(payment_amount) AS average_quarterly_sales
+        SUM(payment_amount) AS total_quarterly_sales,
+        (SELECT AVG(quarterly_total)
+         FROM (
+             SELECT store_id, EXTRACT(YEAR FROM payment_date) AS year, quarter, SUM(payment_amount) AS quarterly_total
+             FROM detailed_sales_report
+             WHERE store_id = NEW.store_id
+             GROUP BY store_id, EXTRACT(YEAR FROM payment_date), quarter
+         ) AS quarterly_totals
+        ) AS average_quarterly_sales
     FROM 
         detailed_sales_report
     WHERE 
@@ -161,12 +171,20 @@ BEGIN
     ALTER TABLE detailed_sales_report ENABLE TRIGGER update_summary_after_insert;
 
     -- Manually update the summary table
-    INSERT INTO summary_sales_report (store_id, quarter, year, average_quarterly_sales)
+    INSERT INTO summary_sales_report (store_id, quarter, year, total_quarterly_sales, average_quarterly_sales)
     SELECT 
         store_id,
         quarter,
         EXTRACT(YEAR FROM payment_date) AS year,
-        AVG(payment_amount) AS average_quarterly_sales
+        SUM(payment_amount) AS total_quarterly_sales,
+        (SELECT AVG(quarterly_total)
+         FROM (
+             SELECT store_id, EXTRACT(YEAR FROM payment_date) AS year, quarter, SUM(payment_amount) AS quarterly_total
+             FROM detailed_sales_report
+             GROUP BY store_id, EXTRACT(YEAR FROM payment_date), quarter
+         ) AS quarterly_totals
+         WHERE quarterly_totals.store_id = detailed_sales_report.store_id
+        ) AS average_quarterly_sales
     FROM 
         detailed_sales_report
     GROUP BY 
